@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100;
+    }
+
+    #api-details-form {
+      font-size: 16px;
+      height: 100%;
+      width: 100%;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      margin: 8px 0;
+    }
+
+    .input-container input {
+      border-radius: 8px;
+      border: 1px solid lightgrey;
+      height: 40px;
+      margin: 4px 0;
+      outline: none;
+    }
+
+    .input-container input:focus {
+      border: 1px solid #ff8139;
+    }
+
+    #submit-button {
+      margin: auto;
+      height: 48px;
+      width: 100px;
+      padding: 4px 8px;
+      border: 1px solid #ff8139;
+      border-radius: 4px;
+    }
+
+    #submit-button:hover {
+      color: #ffffff;
+      background: #ff8139;
+    }
+  </style>
+</head>
+<body>
+  <form id="api-details-form">
+    <div class="input-container">
+      <label for="apiKey">API Key</label>
+      <input type="text" placeholder="Enter API Key" name="apiKey" id="apiKey" autocomplete="off">
+    </div>
+    <div class="input-container">
+      <label for="apiSecret">API Secret</label>
+      <input type="password" placeholder="Enter API Secret" name="apiSecret" id="apiSecret" autocomplete="off">
+    </div>
+    <button type="Submit" id="submit-button">Submit</button>
+  </form>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>
+    $("#api-details-form").submit(function(e) {
+      e.preventDefault();
+      $("#submit-button").attr("disabled", true);
+      $("#submit-button").text("Submitting...");
+      var apiKey = e.target.apiKey;
+      var apiSecret = e.target.apiSecret;
+
+      google.script.run.withSuccessHandler(function(e) {
+        console.log("Success", e);
+        google.script.host.close();
+      }).withFailureHandler(function(error) {
+        console.log("Error", error);
+      }).submitAPIDetailsAndVerify(apiKey.value, apiSecret.value);
+    })
+  </script>
+</body>
+</html>
