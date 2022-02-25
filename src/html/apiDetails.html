@@ -81,8 +81,8 @@
       e.preventDefault();
       $("#submit-button").attr("disabled", true);
       $("#submit-button").text("Submitting...");
-      var apiKey = e.target.apiKey;
-      var apiSecret = e.target.apiSecret;
+      const apiKey = e.target.apiKey;
+      const apiSecret = e.target.apiSecret;
 
       google.script.run.withSuccessHandler(function(e) {
         console.log("Success", e);

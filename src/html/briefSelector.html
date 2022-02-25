@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  <style>
+     * {
+      box-sizing: border-box;
+    }
+    html {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100;
+    }
+
+    #api-details-form {
+      font-size: 16px;
+      height: 100%;
+      width: 100%;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      border: 1px solid lightgrey;
+      border-radius: 8px;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .input-container input {
+      border-radius: 8px;
+      border: 1px solid lightgrey;
+      outline: none;
+      margin-right: 8px;
+    }
+
+    .input-container input:focus {
+      border: 1px solid #ff8139;
+    }
+
+    .button {
+      margin: auto;
+      height: 40px;
+      width: 80px;
+      padding: 4px 8px;
+      border: 1px solid #ff8139;
+      border-radius: 4px;
+    }
+    .button:hover {
+      color: #ffffff;
+      background: #ff8139;
+    }
+
+    #submit-button {
+      width: 120px;
+      margin: 0 16px;
+    }
+  </style>
+</head>
+<body>
+  <form class="briefs" id="brief-form">
+  </form>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>
+    let page = 0;
+    $( document ).ready(function() {
+      google.script.run.withSuccessHandler(function(briefs) {
+        console.log(briefs)
+        renderBriefs(briefs);
+      }).withFailureHandler(function(error) {
+        // show error
+      }).getAllBriefs(page);
+    });
+
+    function renderBriefs(briefs) {
+      const briefForm = $('#brief-form');
+      // TODO: handle this more gracefully than just clearing HTML and re-rendering it.
+      briefForm.html('');
+      const briefsFragment = document.createDocumentFragment();
+      briefs.forEach(function(brief) {
+        const inputContainer = document.createElement('div');
+        inputContainer.classList.add('input-container');
+
+        const briefLabel = document.createElement('label');
+        briefLabel.innerText = brief.story;
+        briefLabel.setAttribute('for', brief.id);
+
+        const briefRadioInput = document.createElement('input');
+
+        briefRadioInput.setAttribute('type', 'radio');
+        briefRadioInput.setAttribute('name', 'briefId');
+        briefRadioInput.setAttribute('id', brief.id);
+        briefRadioInput.setAttribute('value', brief.id);
+
+        inputContainer.appendChild(briefRadioInput);
+        inputContainer.appendChild(briefLabel);
+        briefsFragment.appendChild(inputContainer);
+      });
+      briefForm.append(briefsFragment);
+      briefForm.append('<button type="button" class="button" id="previous-button" disabled>Previous</button>');
+      briefForm.append('<button type="Submit" class="button" id="submit-button">Submit</button>');
+      briefForm.append('<button type="button" class="button" id="next-button">Next</button>');
+    }
+
+    $('#brief-form').submit(function(e) {
+      e.preventDefault();
+      const selectedBriefId = e.target.briefId;
+      console.log('Brief selected', selectedBriefId.value);
+      google.script.run.withSuccessHandler(function(e) {
+        console.log("Success", e);
+        google.script.host.close();
+        }).withFailureHandler(function(error) {
+          // show error
+        }).setSelectedBriefId(selectedBriefId.value);
+    });
+
+    $('#next-button').click(function() {
+      if(page === 0) {
+        $('#previous-button').attr('disabled', false);
+      }
+        page += 1;
+        google.script.run.withSuccessHandler(function(briefs) {
+          console.log(briefs)
+          renderBriefs(briefs);
+        }).withFailureHandler(function(error) {
+          // show error
+        }).getAllBriefs(page);
+    });
+
+    $('#previous-button', function() {
+      if(page === 1) {
+        $('#previous-button').attr('disabled', true);
+      }
+        page -= 1;
+        google.script.run.withSuccessHandler(function(briefs) {
+          console.log(briefs)
+          renderBriefs(briefs);
+        }).withFailureHandler(function(error) {
+          // show error
+        }).getAllBriefs(page);
+    })
+  </script>
+</body>
+</html>

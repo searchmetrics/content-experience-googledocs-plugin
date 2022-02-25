@@ -28,18 +28,93 @@ function onOpen(e) {
  * @returns void
  */
 function init() {
+  // TODO: remove this before shipping. Just to start user journey from scratch while in development
+  PropertiesService.getUserProperties().deleteAllProperties();
+  PropertiesService.getDocumentProperties().deleteAllProperties();
+  checkIfAPIDetailsExist();
+  return;
+}
+
+/**
+ * Check if this is the first time the Add-on is being launched.
+ * If yes, ask the user for API key and secret.
+ */
+function checkIfAPIDetailsExist() {
   const userProperties = PropertiesService.getUserProperties();
 
   const apiKey = userProperties.getProperty('API_KEY');
   const apiSecret = userProperties.getProperty('API_SECRET');
 
-  // Check if this is the first time the add-on is running
   if(!apiKey && !apiSecret) {
-    // Ask the user for API key and secret
     showAPIDetailsDialog();
     return;
+  } else {
+    checkIfBriefIsSelected();
   }
-  showSidebar();
+}
+
+/**
+ * Check if the user has already selected a brief.
+ */
+function checkIfBriefIsSelected() {
+  // Check if the user has already selected a brief for the current doc
+  const docProperties = PropertiesService.getDocumentProperties();
+  const briefId = docProperties.getProperty('BRIEF_ID');
+
+  if(briefId) {
+    /**
+    * Check if the brief already has some content
+    * if yes show a prompt to the user to either select the content in the brief or overwrite with doc
+    */
+    showSidebar();
+    return;
+  }
+
+  // if no, show all the briefs in the current account
+  showBriefSelectorDialog();
+}
+
+/**
+ * Shows a dialog listing all the briefs.
+ */
+function showBriefSelectorDialog() {
+  var ui = HtmlService.createHtmlOutputFromFile('src/html/briefSelector')
+      .setTitle('Select a Brief').setWidth(400).setHeight(500);
+  DocumentApp.getUi().showModalDialog(ui, 'Select a Brief');
+}
+
+function getAllBriefs(page) {
+  const userProperties = PropertiesService.getUserProperties();
+  const docProperties = PropertiesService.getDocumentProperties();
+  const noOfResults = 20;
+
+  const apiKey = userProperties.getProperty('API_KEY');
+  const apiSecret = userProperties.getProperty('API_SECRET');
+  const licenseId = docProperties.getProperty('LICENSE_ID');
+  const parentLicenseId = docProperties.getProperty('PARENT_LICENSE_ID');
+
+  const query = '{"query": "{ content_experience { briefings_list(filter:{ account_id:' + parseInt(licenseId) + '}, license_id: ' + parseInt(parentLicenseId) + ', limit: ' + noOfResults + ', offset: ' + (page * noOfResults) + ') { briefings { id story } count } } }"}';
+
+  const response = apiRequest(apiKey, apiSecret, query);
+  if(response.data && response.data.content_experience.briefings_list.briefings) {
+    return response.data.content_experience.briefings_list.briefings;
+  }
+  return null;
+}
+
+function getBrief() {
+  const userProperties = PropertiesService.getUserProperties();
+  const apiKey = userProperties.setProperty('API_KEY', key);
+  const apiSecret = userProperties.setProperty('API_SECRET', secret);
+
+  const docProperties = PropertiesService.getDocumentProperties();
+  const briefId = docProperties.getProperty('BRIEF_ID');
+
+  const query = '{"query": "{ content_experience { briefing(id:\"' + parseInt(briefId) + '\") { owner_id assignee_id name title content content_score target_score content_length target_length topics { state type value } topics_coverage { topic keywords_coverage { keyword current_frequency target_frequency keyword_type } } questions { id topic data { active group id origin question local_rank global_rank } } infos{ average_median_num_words content_score_goal readability_target seo_value seo_value_potential status traffic_index traffic_index_potential } content_optimization { docStats { customerReadability readability } } validation { overallScore readability contentScore { content_score coverage_score natural_language_score repetition_score length_score } duplicationCheckResults{ duplication_score level title url } } } } }"}'; 
+  const response = apiRequest(key, secret, query);
+  if(response.data && response.data.content_experience.briefing) {
+    return response.data && response.data.content_experience.briefing
+  }
 }
 
 /**
@@ -79,11 +154,22 @@ function submitAPIDetailsAndVerify(key, secret) {
     const userProperties = PropertiesService.getUserProperties();
     const apiKey = userProperties.setProperty('API_KEY', key);
     const apiSecret = userProperties.setProperty('API_SECRET', secret);
-    showSidebar();
+
+    const docProperties = PropertiesService.getDocumentProperties();
+    docProperties.setProperty('LICENSE_ID', data.admin.license.license_id);
+    docProperties.setProperty('PARENT_LICENSE_ID', data.admin.license.parent_license_id);
+    checkIfBriefIsSelected();
     return true;
   } else {
     throw new Error("Something Went Wrong");
   }
+}
+
+function setSelectedBriefId(briefId) {
+  const docProperties = PropertiesService.getDocumentProperties();
+  docProperties.setProperty('BRIEF_ID', briefId);
+  showSidebar();
+  return;
 }
 
 /**
@@ -267,13 +353,18 @@ function apiRequest(key, secret, query) {
     'sm-api-secret': secret,
   };
 
+  console.log('API Request', {
+    headers,
+    query,
+  });
+
   const response = UrlFetchApp.fetch("https://graphql-stage.searchmetrics.com/", {
     method: 'post',
     payload: query,
     headers,
   });
 
-  console.log("API Request", query, headers, response.getContentText());
+  console.log('API Request response:', response.getContentText());
 
   return JSON.parse(response.getContentText());
 }
