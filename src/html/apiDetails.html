@@ -48,7 +48,7 @@
       border: 1px solid #ff8139;
     }
 
-    #submit-button {
+    #submit-button, #authorize-button {
       margin: auto;
       height: 48px;
       width: 100px;
@@ -57,7 +57,7 @@
       border-radius: 4px;
     }
 
-    #submit-button:hover {
+    #submit-button:hover, #authorize-button:hover {
       color: #ffffff;
       background: #ff8139;
     }
@@ -84,10 +84,13 @@
       const apiKey = e.target.apiKey;
       const apiSecret = e.target.apiSecret;
 
-      google.script.run.withSuccessHandler(function(e) {
-        console.log("Success", e);
-        google.script.host.close();
+      google.script.run.withSuccessHandler(function(authorizationURL) {
+        console.log("Success", authorizationURL);
+        if(authorizationURL) {
+          document.body.innerHTML = `<a id="authorize-button" href="${authorizationURL}"" target="_blank">Authorize Plugin</a>`
+        }
       }).withFailureHandler(function(error) {
+        google.script.host.close();
         console.log("Error", error);
       }).submitAPIDetailsAndVerify(apiKey.value, apiSecret.value);
     })
