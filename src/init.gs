@@ -146,7 +146,10 @@ function showAPIDetailsDialog() {
  * Receives the API key and secret and fetches the corresponding license to check if the details entered are correct
  */
 function submitAPIDetailsAndVerify(key, secret) {
-  const docsService = getDocsService(key, secret);
+  const userProperties = PropertiesService.getUserProperties();
+  const apiKey = userProperties.setProperty('API_KEY', key);
+  const apiSecret = userProperties.setProperty('API_SECRET', secret);
+  const docsService = getService();
   if(!docsService.hasAccess()) {
     const authorizationURL = docsService.getAuthorizationUrl();
     return authorizationURL;
@@ -154,10 +157,6 @@ function submitAPIDetailsAndVerify(key, secret) {
     checkIfBriefIsSelected();
     return true;
   }
-}
-
-function authCallback() {
-
 }
 
 function setSelectedBriefId(briefId) {
@@ -343,20 +342,12 @@ function insertText(newText) {
 }
 
 function apiRequest(key, secret, query) {
-  const headers = {
-    'sm-api-key': key,
-    'sm-api-secret': secret,
-  };
 
-  console.log('API Request', {
-    headers,
-    query,
-  });
-
-  const response = UrlFetchApp.fetch("https://graphql-stage.searchmetrics.com/", {
-    method: 'post',
-    payload: query,
-    headers,
+  var docsService = getService();
+  var response = UrlFetchApp.fetch('https://api.searchmetrics.com', {
+    headers: {
+      Authorization: 'Bearer ' + docsService.getAccessToken()
+    }
   });
 
   console.log('API Request response:', response.getContentText());
