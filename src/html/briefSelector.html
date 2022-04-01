@@ -138,7 +138,7 @@
         }).getAllBriefs(page);
     });
 
-    $('#previous-button', function() {
+    $('#previous-button').click(function() {
       if(page === 1) {
         $('#previous-button').attr('disabled', true);
       }
@@ -149,7 +149,7 @@
         }).withFailureHandler(function(error) {
           // show error
         }).getAllBriefs(page);
-    })
+    });
   </script>
 </body>
 </html>

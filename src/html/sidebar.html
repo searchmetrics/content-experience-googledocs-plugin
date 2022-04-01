@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+
+    <style>
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Content Score: 95%</h2>
+      <h6>Target Score: 96%</h6>
+    </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function() {
+        getBrief();
+      });
+
+      function getBrief() {
+        google.script.run.withSuccessHandler(function(brief){
+          console.log({brief});
+          $('.sidebar').text = brief.content_score;
+        }).getBrief();
+      }
+    </script>
+  </body>
+</html>

@@ -146,23 +146,18 @@ function showAPIDetailsDialog() {
  * Receives the API key and secret and fetches the corresponding license to check if the details entered are correct
  */
 function submitAPIDetailsAndVerify(key, secret) {
-  const query = '{"query": "{ admin { license { license_id parent_license_id } } }"}';
-
-  const response = apiRequest(key, secret, query);
-  const data = response.data;
-  if(data && data.admin && data.admin.license && data.admin.license.license_id) {
-    const userProperties = PropertiesService.getUserProperties();
-    const apiKey = userProperties.setProperty('API_KEY', key);
-    const apiSecret = userProperties.setProperty('API_SECRET', secret);
-
-    const docProperties = PropertiesService.getDocumentProperties();
-    docProperties.setProperty('LICENSE_ID', data.admin.license.license_id);
-    docProperties.setProperty('PARENT_LICENSE_ID', data.admin.license.parent_license_id);
+  const docsService = getDocsService(key, secret);
+  if(!docsService.hasAccess()) {
+    const authorizationURL = docsService.getAuthorizationUrl();
+    return authorizationURL;
+  } else {
     checkIfBriefIsSelected();
     return true;
-  } else {
-    throw new Error("Something Went Wrong");
   }
+}
+
+function authCallback() {
+
 }
 
 function setSelectedBriefId(briefId) {
@@ -178,7 +173,7 @@ function setSelectedBriefId(briefId) {
  * the mobile add-on version.
  */
 function showSidebar() {
-  var ui = HtmlService.createHtmlOutputFromFile('src/sidebar')
+  var ui = HtmlService.createHtmlOutputFromFile('src/html/sidebar')
       .setTitle('Content Experience');
   DocumentApp.getUi().showSidebar(ui);
 }
@@ -368,3 +363,5 @@ function apiRequest(key, secret, query) {
 
   return JSON.parse(response.getContentText());
 }
+
+// https://script.google.com/macros/d/{SCRIPT ID}/usercallback
