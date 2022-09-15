@@ -19,7 +19,7 @@
       width: 100;
     }
 
-    #api-details-form {
+    #brief-form {
       font-size: 16px;
       height: 100%;
       width: 100%;
@@ -29,6 +29,7 @@
       padding: 20px;
       border: 1px solid lightgrey;
       border-radius: 8px;
+      justify-content: space-between;
     }
 
     .input-container {
@@ -66,51 +67,78 @@
       width: 120px;
       margin: 0 16px;
     }
+    .actions {
+      display: flex;
+    }
   </style>
 </head>
 <body>
   <form class="briefs" id="brief-form">
+    <div class="briefs-list" id="briefs-list"></div>
+    <div class="actions">
+      <button type="button" class="button" id="previous-button" disabled>Previous</button>
+      <button type="Submit" class="button action" id="submit-button" disabled>Submit</button>
+      <button type="button" class="button" id="next-button" disabled>Next</button>
+    </div>
   </form>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script>
-    let page = 0;
+    var briefingListOffset = 0;
+    var briefingListLimit = 10;
+    var totalBriefs;
     $( document ).ready(function() {
-      google.script.run.withSuccessHandler(function(briefs) {
-        console.log(briefs)
+      google.script.run.withSuccessHandler(function(response) {
+        console.log(response)
+        var briefs = response.data;
+        totalBriefs = response.total_count;
         renderBriefs(briefs);
+
       }).withFailureHandler(function(error) {
         // show error
-      }).getAllBriefs(page);
+      }).fetchBriefsList(briefingListLimit, briefingListOffset);
     });
 
     function renderBriefs(briefs) {
-      const briefForm = $('#brief-form');
-      // TODO: handle this more gracefully than just clearing HTML and re-rendering it.
-      briefForm.html('');
+      console.log(briefs);
+      const briefList = $('#briefs-list');
+      const submitButton = $('#submit-button');
+      submitButton.attr('disabled', true);
+
       const briefsFragment = document.createDocumentFragment();
       briefs.forEach(function(brief) {
         const inputContainer = document.createElement('div');
         inputContainer.classList.add('input-container');
 
         const briefLabel = document.createElement('label');
-        briefLabel.innerText = brief.story;
-        briefLabel.setAttribute('for', brief.id);
+        briefLabel.innerText = brief.brief_name;
+        briefLabel.setAttribute('for', brief.brief_id);
 
         const briefRadioInput = document.createElement('input');
 
         briefRadioInput.setAttribute('type', 'radio');
         briefRadioInput.setAttribute('name', 'briefId');
-        briefRadioInput.setAttribute('id', brief.id);
-        briefRadioInput.setAttribute('value', brief.id);
+        briefRadioInput.setAttribute('id', brief.brief_id);
+        briefRadioInput.setAttribute('value', brief.brief_id);
 
         inputContainer.appendChild(briefRadioInput);
         inputContainer.appendChild(briefLabel);
         briefsFragment.appendChild(inputContainer);
       });
-      briefForm.append(briefsFragment);
-      briefForm.append('<button type="button" class="button" id="previous-button" disabled>Previous</button>');
-      briefForm.append('<button type="Submit" class="button" id="submit-button">Submit</button>');
-      briefForm.append('<button type="button" class="button" id="next-button">Next</button>');
+      briefList.append(briefsFragment);
+
+      if(briefingListOffset === 0) {
+        $('#previous-button').attr('disabled', true);
+      } else {
+        $('#previous-button').attr('disabled', false);
+      }
+
+      if(totalBriefs <= briefingListOffset * briefingListLimit) {
+        $('#next-button').attr('disabled', true);
+      } else {
+        $('#next-button').attr('disabled', false);
+      }
+
+      submitButton.attr('disabled', false);
     }
 
     $('#brief-form').submit(function(e) {
@@ -122,33 +150,26 @@
         google.script.host.close();
         }).withFailureHandler(function(error) {
           // show error
-        }).setSelectedBriefId(selectedBriefId.value);
+        }).setSelectedBrief(selectedBriefId.value);
     });
 
     $('#next-button').click(function() {
-      if(page === 0) {
-        $('#previous-button').attr('disabled', false);
-      }
-        page += 1;
+        briefingListOffset += 1;
         google.script.run.withSuccessHandler(function(briefs) {
-          console.log(briefs)
           renderBriefs(briefs);
         }).withFailureHandler(function(error) {
           // show error
-        }).getAllBriefs(page);
+        }).fetchBriefsList(briefingListLimit, briefingListOffset);
     });
 
     $('#previous-button').click(function() {
-      if(page === 1) {
-        $('#previous-button').attr('disabled', true);
-      }
-        page -= 1;
+        briefingListOffset -= 1;
         google.script.run.withSuccessHandler(function(briefs) {
           console.log(briefs)
           renderBriefs(briefs);
         }).withFailureHandler(function(error) {
           // show error
-        }).getAllBriefs(page);
+        }).fetchBriefsList(briefingListLimit, briefingListOffset);
     });
   </script>
 </body>

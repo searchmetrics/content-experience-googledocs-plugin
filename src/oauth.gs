@@ -19,7 +19,7 @@ function getService() {
       .setPropertyStore(PropertiesService.getUserProperties())
 
       // Set the scopes to request.
-      .setScope('create:briefs read:briefs update:briefs')
+      .setScope('create:briefs read:briefs update:briefs offline_access')
       .setParam('response_type', 'code')
       .setParam('audience', 'https://api.searchmetrics.com');
 }

@@ -3,28 +3,181 @@
   <head>
     <base target="_top">
     <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
     <!-- The CSS package above applies Google styling to buttons and other elements. -->
 
     <style>
+      h2 {
+        font-size: 24px;
+        margin: 12px 0 4px;
+      }
+      h4 {
+        padding: 0;
+        margin: 0;
+      }
+      #brief-details {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      #brief-details .country {
+        width: 40px;
+      }
+      #brief-details .name {
+        flex: 1;
+      }
+      #brief-details .keyword {
+        width: 100%;
+      }
+      #brief-details .url {
+        width: 100%;
+      }
+
+      #content-score > div {
+        display: flex;
+        margin: 8px 0;
+      }
+
+      #content-score .score {
+        display: block;
+      }
+
+      .keyword-item {
+        display: flex;
+        justify-content: space-between;
+        text-transform: capitalize;
+      }
+
+      #accordion {
+        margin-top: 40px;
+      }
+
+      #accordion > div {
+        padding: 8px;
+      }
     </style>
   </head>
   <body>
-    <div class="sidebar">
-      <h2>Content Score: 95%</h2>
-      <h6>Target Score: 96%</h6>
+    <div class="sidebar branding-below">
+      <div class="block" id="brief-details">
+        <div class="country"></div>
+        <div class="name"></div>
+        <div class="keyword">
+          <span class="gray">Keywords:</span>
+          <span class="value"></span>
+        </div>
+        <div class="url">
+          <span class="gray">URL:</span>
+          <span class="value"></span>
+        </div>
+        <div class="title">
+          <span class="gray">Title:</span>
+          <span class="value"></span>
+        </div>
+      </div>
+      <div id="accordion">
+        <h3>Content Score</h3>
+        <div class="block" id="content-score">
+          <div class="score">
+            <span class="gray">Content Score:</span>
+            <div class="value"></div>
+            <div class="target gray"></div>
+          </div>
+          <div class="word-count">
+            <span class="gray">Word Count: </span>
+            <div class="value"></div>
+          </div>
+          <div class="sentence-structure">
+            <span class="gray">Sentence Structure: </span>
+            <div class="value"></div>
+          </div>
+          <div class="coverage-score">
+            <span class="gray">Keyword Coverage: </span>
+            <div class="value"></div>
+          </div>
+          <div class="repetition-score">
+            <span class="gray">Repetition Score: </span>
+            <div class="value"></div>
+          </div>
+        </div>
+        <h3>Keywords</h3>
+        <div id="keywords-list">
+        </div>
+        <h3>Readability Score</h3>
+        <div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar bottom">
+      <span class="gray">
+        Powered by Searchmetrics
+      </span>
     </div>
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script>
       $(document).ready(function() {
         getBrief();
+        $( "#accordion" ).accordion();
       });
 
       function getBrief() {
         google.script.run.withSuccessHandler(function(brief){
           console.log({brief});
-          $('.sidebar').text = brief.content_score;
+          renderBriefDetails(brief);
+          renderBriefContentScore(brief);
+          renderKeywordsList(brief);
         }).getBrief();
+      }
+
+      function renderBriefDetails(brief) {
+        var country = $('#brief-details .country')
+        country.text(brief.country);
+        var name = $('#brief-details .name')
+        name.html(`<h4>${brief.language.toUpperCase()} - ${brief.brief_name}</h4>`);
+        var title = $('#brief-details .title .value')
+        title.text(brief.url_title);
+        var keyword = $('#brief-details .keyword .value')
+        keyword.text(brief.brief_keywords.map(({keyword}) => keyword).join(', '));
+        var url = $('#brief-details .url .value')
+        url.text(brief.url);
+      }
+
+      function renderBriefContentScore(brief) {
+        var contentScore = $('#content-score .score .value');
+        var contentScoreTarget = $('#content-score .score .target');
+        contentScore.html(`<h2>${Math.ceil(brief.latest_content_version.content_score * 100)}%</h2>`);
+        contentScoreTarget.text(`Target: ${brief.target_content_score}`);
+
+        var wordCount = $('#content-score .word-count .value');
+        var contentScoreTarget = $('#content-score .score .target');
+        wordCount.html(`&nbsp;${brief.latest_content_version.word_count}/<span class="gray">${brief.target_word_count}</span> words`);
+        
+        var sentenceStructure = $('#content-score .sentence-structure .value');
+        sentenceStructure.html(`&nbsp;${Math.ceil(brief.latest_content_version.natural_language_score * 100)}%`);
+
+        var coverageScore = $('#content-score .coverage-score .value');
+        coverageScore.html(`&nbsp;${Math.ceil(brief.latest_content_version.coverage_score * 100)}%`);
+
+        var repetitionScore = $('#content-score .repetition-score .value');
+        repetitionScore.html(`&nbsp;${Math.ceil(brief.latest_content_version.repetition_score * 100)}%`);
+      }
+
+      function renderKeywordsList(brief) {
+        const keywordsList = $('#keywords-list');
+        const keywords = brief.brief_keywords.map(({keyword, target_frequency, current_frequency}) => {
+          return `
+            <div class="keyword-item">
+              <span>${keyword}</span>
+              <span>
+                ${current_frequency}/
+                <span class="gray">${target_frequency}</span>
+              </span>
+            </div>
+          `
+        });
+        console.log(keywords.join());
+        keywordsList.html(keywords.join())
       }
     </script>
   </body>
